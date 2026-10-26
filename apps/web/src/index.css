@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-concrete text-navy font-sans antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight;
+  }
+}
+
+@layer utilities {
+  /* Road Line Motif */
+  .road-line-x {
+    background-image: linear-gradient(to right, currentColor 50%, transparent 50%);
+    background-size: 16px 2px; /* 8px dash, 8px gap */
+    background-repeat: repeat-x;
+    background-position: bottom;
+    height: 2px;
+    width: 100%;
+  }
+
+  .road-line-y {
+    background-image: linear-gradient(to bottom, currentColor 50%, transparent 50%);
+    background-size: 2px 16px; 
+    background-repeat: repeat-y;
+    background-position: center;
+    width: 2px;
+    height: 100%;
+  }
+  
+  /* Standard focus visible for accessibility */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2 focus-visible:ring-offset-concrete;
+  }
+}

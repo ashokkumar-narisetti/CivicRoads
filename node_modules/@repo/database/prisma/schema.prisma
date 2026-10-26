@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ComplaintStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+}
+
+enum Role {
+  OFFICER
+  FIELD_ENGINEER
+}
+
+model Municipality {
+  id           String     @id @default(uuid())
+  name         String
+  district     String
+  boundaryData Json?      // For geo-lookup mapping
+  complaints   Complaint[]
+  officers     Officer[]
+}
+
+model Officer {
+  id             String       @id @default(uuid())
+  name           String
+  email          String       @unique
+  passwordHash   String
+  municipalityId String
+  role           Role         @default(OFFICER)
+  municipality   Municipality @relation(fields: [municipalityId], references: [id])
+  complaints     Complaint[]
+}
+
+model Admin {
+  id           String @id @default(uuid())
+  name         String
+  email        String @unique
+  passwordHash String
+}
+
+model Complaint {
+  id                String            @id @default(uuid())
+  complaintCode     String            @unique // RD{YEAR}{6-digit}
+  citizenName       String
+  citizenMobile     String
+  imageUrl          String
+  latitude          Float
+  longitude         Float
+  village           String
+  municipalityId    String
+  defectType        String?
+  severity          Severity?
+  estimatedAreaSqM  Float?
+  estimatedCost     Float?
+  status            ComplaintStatus   @default(SUBMITTED)
+  assignedOfficerId String?
+  description       String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  municipality      Municipality      @relation(fields: [municipalityId], references: [id])
+  assignedOfficer   Officer?          @relation(fields: [assignedOfficerId], references: [id])
+  statusLogs        ComplaintStatusLog[]
+}
+
+model ComplaintStatusLog {
+  id          String          @id @default(uuid())
+  complaintId String
+  oldStatus   ComplaintStatus?
+  newStatus   ComplaintStatus
+  changedBy   String          // Could be 'System' or Officer ID
+  changedAt   DateTime        @default(now())
+
+  complaint   Complaint       @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+}

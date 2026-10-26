@@ -1,0 +1,15 @@
+
+> @repo/api@1.0.0 build
+> tsc
+
+src/middlewares/upload.middleware.ts(3,35): error TS2307: Cannot find module 'multer-storage-cloudinary' or its corresponding type declarations.
+src/middlewares/upload.middleware.ts(13,18): error TS7006: Parameter 'req' implicitly has an 'any' type.
+src/middlewares/upload.middleware.ts(13,23): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/services/complaint.service.ts(1,24): error TS2305: Module '"@repo/database"' has no exported member 'ComplaintStatus'.
+npm error Lifecycle script `build` failed with error:
+npm error code 2
+npm error path A:\Major-Project-27\apps\api
+npm error workspace @repo/api@1.0.0
+npm error location A:\Major-Project-27\apps\api
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c tsc
