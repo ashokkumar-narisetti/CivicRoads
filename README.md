@@ -1,29 +1,51 @@
-# Road Defect Detection & Reporting System
+# CivicRoads — Road Defect Detection & Reporting System
 
-A production-grade, full-stack monorepo application designed for citizens to report road defects (potholes, cracks) and for municipal officers to track and manage their resolution.
+A production-grade, full-stack monorepo application designed for citizens to report road defects (potholes, cracks) and for municipal officers and administrators to track, verify, and manage their resolution.
 
-This system leverages an external AI/ML service for automated defect detection, severity assessment, and cost estimation based on uploaded images.
+The platform integrates with an external AI/ML inference service for automated pothole detection, bounding-box localization, and severity assessment from uploaded road images.
 
 ---
 
-## 🏗 Architecture
+## 🏗 Repository Structure
 
-This project is structured as a **Monorepo** using npm workspaces and Turborepo for fast, cached builds.
+This project is organized as an **npm workspaces** monorepo orchestrated with **Turborepo**:
 
-### Project Structure
-- `apps/web`: The React 18 frontend (Vite, React Router, Tailwind CSS). Contains the Citizen, Officer, and Admin portals.
-- `apps/api`: The Node.js / Express backend API using a layered architecture (Routes -> Controllers -> Services).
-- `packages/database`: The Prisma schema, migrations, and generated client for PostgreSQL.
-- `packages/shared`: Shared TypeScript types and Zod validation schemas used across both the frontend and backend to guarantee strict type safety.
+```
+CivicRoads/
+├── frontend/               # React 19 + Vite 8 + Tailwind CSS + Recharts
+│   ├── src/pages/citizen/  # Public citizen reporting & tracking pages
+│   ├── src/pages/officer/  # Municipal officer portal & complaint processing
+│   ├── src/pages/admin/    # Super Admin statewide management & analytics
+│   └── src/lib/api.ts      # Axios API client wrapper
+├── backend/                # Node.js + Express + TypeScript API
+│   ├── src/controllers/    # Request handlers & response formatting
+│   ├── src/services/       # Business logic (ComplaintService, ML integration)
+│   ├── src/middlewares/    # Multer Cloudinary upload, Auth, Error handling
+│   └── src/routes/         # /api/citizen, /api/officer, etc.
+├── packages/
+│   ├── shared/             # Shared Zod schemas, DTOs, and TypeScript contracts
+│   └── database/           # Prisma ORM schema, PostgreSQL models, seed script
+├── ai-service/             # Python FastAPI YOLO pothole detection service (Future)
+│   ├── requirements.txt    # Python dependencies manifest
+│   └── README.md           # AI integration & model setup documentation
+├── .gitignore              # Monorepo-wide Git exclusion rules
+├── .env.example            # Canonical environment variable templates
+├── package.json            # Root workspaces definition
+└── turbo.json              # Turborepo task pipelines
+```
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- **Node.js** (v18 or higher)
-- **PostgreSQL** (v14 or higher) running locally or remotely
-- **Cloudinary** account (for image uploads)
+- **Node.js**: v18.0.0 or higher (v20+ recommended)
+- **npm**: v10.0.0 or higher
+- **PostgreSQL**: v14 or higher (local instance or cloud database)
+- **Cloudinary Account**: Required for image storage (cloud name, API key, API secret)
+- **Python**: v3.10+ (optional, only when running the AI inference microservice)
+
+---
 
 ### 1. Installation
 
@@ -33,94 +55,103 @@ Clone the repository and install all dependencies from the root directory:
 npm install
 ```
 
-### 2. Environment Variables
+---
 
-You need to configure your environment variables. In the root directory (or in `apps/api`), ensure you have a `.env` file with the following variables:
+### 2. Environment Configuration
 
-```env
-# Database Configuration
-DATABASE_URL="postgresql://username:password@localhost:5432/road_defects?schema=public"
-
-# Authentication
-JWT_SECRET="your-super-secret-jwt-key"
-
-# ML Microservice URL (FastAPI)
-ML_SERVICE_URL="http://localhost:8000/predict"
-
-# Cloudinary Storage Configuration
-CLOUDINARY_CLOUD_NAME="your_cloud_name"
-CLOUDINARY_API_KEY="your_api_key"
-CLOUDINARY_API_SECRET="your_api_secret"
-
-# Frontend Configuration (Optional if running apps/web separately)
-VITE_API_URL="http://localhost:3000/api"
-```
-
-### 3. Database Setup
-
-Before starting the application, you must apply the database schema and optionally seed it with initial data (like an Admin user and a test Municipality).
+Copy the example environment file to `.env`:
 
 ```bash
-# Navigate to the database package
-cd packages/database
-
-# Push the schema to your PostgreSQL database
-npm run db:push
-
-# Seed the database
-npm run db:seed
+cp .env.example .env
 ```
 
-### 4. Running the Application
+Configure the following variables in `.env` (or in `backend/.env` and `frontend/.env`):
 
-To run the entire stack (Frontend and Backend concurrently), go back to the root directory and use Turborepo:
+| Variable | Description | Default / Example |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://postgres:postgres@localhost:5432/road_defects?schema=public` |
+| `PORT` | Backend Express server port | `3000` |
+| `JWT_SECRET` | Secret key for signing Officer/Admin JWTs | `your-super-secret-jwt-key` |
+| `ML_SERVICE_URL` | External Python FastAPI microservice URL | `http://localhost:8000/predict` |
+| `ENABLE_DEV_MOCK_AI` | Explicitly enable local mock AI inference | `"false"` (or `"true"` for offline testing) |
+| `CLOUDINARY_CLOUD_NAME`| Cloudinary cloud identifier | `your_cloud_name` |
+| `CLOUDINARY_API_KEY` | Cloudinary API access key | `your_api_key` |
+| `CLOUDINARY_API_SECRET`| Cloudinary API secret | `your_api_secret` |
+| `VITE_API_URL` | Frontend API base URL | `http://localhost:3000/api` |
 
+---
+
+### 3. Database Setup (Prisma & PostgreSQL)
+
+Generate the Prisma Client:
+```bash
+npm --workspace=@repo/database run generate
+```
+
+Synchronize the database schema with your PostgreSQL instance:
+```bash
+npm --workspace=@repo/database run db:push
+```
+
+Seed initial administrative and municipal records:
+```bash
+npm --workspace=@repo/database run db:seed
+```
+
+---
+
+### 4. Running the Development Servers
+
+To run all applications concurrently via Turborepo:
 ```bash
 npm run dev
 ```
 
-- **Frontend (Web App)** will be available at: `http://localhost:5173`
-- **Backend (API)** will be available at: `http://localhost:3000`
+Or run services individually:
+- **Frontend only** (Port `5173`):
+  ```bash
+  npm --workspace=frontend run dev
+  ```
+- **Backend API only** (Port `3000`):
+  ```bash
+  npm --workspace=backend run dev
+  ```
 
 ---
 
-## 🧠 Integrating the ML Model (FastAPI)
+### 5. Running the Python AI Microservice (Future Integration)
 
-This system is designed to integrate with an external Python FastAPI microservice that handles the heavy lifting of running computer vision models (e.g., YOLOv8) on the uploaded images.
+The Python FastAPI inference service is documented in `ai-service/`:
 
-### How it Works
-When a citizen reports a defect, the Node.js API:
-1. Uploads the image to Cloudinary.
-2. Makes a REST POST request to the `ML_SERVICE_URL`.
-3. Attaches the ML insights to the newly created database record.
-
-### Expected ML Service Contract
-
-Your FastAPI service must expose an endpoint (e.g., `POST /predict`) that accepts a JSON payload and returns specific data points.
-
-**Request Payload to ML Service:**
-```json
-{
-  "imageUrl": "https://res.cloudinary.com/..."
-}
+```bash
+cd ai-service
+python -m venv venv
+source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
-
-**Expected Response from ML Service:**
-```json
-{
-  "defectType": "Pothole",
-  "severity": "HIGH",
-  "estimatedAreaSqM": 2.5,
-  "estimatedCost": 450.00
-}
-```
-*(Note: Ensure the `severity` matches the Prisma Enum: `LOW`, `MEDIUM`, `HIGH`, or `CRITICAL`)*
 
 ---
 
-## 🛡️ Best Practices & Guidelines
+## 🛠 Quality & Build Commands
 
-- **Service Layer**: Keep business logic out of Express route handlers. Always put logic inside `apps/api/src/services/`.
-- **Validation**: Never trust client data. All incoming requests to the API are validated using Zod schemas defined in `packages/shared/src/schemas`.
-- **Styling**: The frontend utilizes Tailwind CSS. Try to stick to utility classes. If you need complex UI components, use the pre-configured `shadcn/ui` components inside `apps/web/src/components/ui`.
-- **Commits**: Ensure your code passes linting before committing. You can run `npm run lint` at the root to check all packages simultaneously.
+- **Build all packages:**
+  ```bash
+  npm run build
+  ```
+- **Lint all packages:**
+  ```bash
+  npm run lint
+  ```
+- **Format codebase:**
+  ```bash
+  npm run format
+  ```
+
+---
+
+## 🔐 Security & Git Hygiene
+
+- Never commit `.env` files or secret credentials.
+- All dependencies (`node_modules/`), build outputs (`dist/`, `build/`), and runtime logs are strictly ignored by `.gitignore`.
+- Large model weights (`*.pt`, `*.onnx`) should be managed with Git LFS or external artifact storage.
